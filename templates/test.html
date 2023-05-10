@@ -1,0 +1,50 @@
+<html>
+    <head>
+        <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+        <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body style="background-color: #1A68FD;">
+        <p id = "value" style = "text-align: center; color: white; margin-top: 100px; font-size: 25px"></p>
+        <script>
+            function getData(audioFile, callback) {
+                var reader = new FileReader();
+                reader.onload = function(event) {
+                    var data = event.target.result.split(',')
+                     , decodedImageData = btoa(data[1]);                    // the actual conversion of data from binary to base64 format
+                    callback(decodedImageData);        
+                };
+                reader.readAsDataURL(audioFile);
+            }
+            var base64 = ""
+            var a = fetch("../static/sample_audio/long_audio.mp3")
+                .then(res => {
+                    var reader = res.body.getReader();
+                    return reader.read().then(result => {
+                        return result;
+                    });
+                })
+                .then(data => {
+                    var blob = new Blob([data.value], { type: "audio/wav" });
+                    console.log(blob)
+                    getData(blob, (e)=>{
+                        let formdata = new FormData();
+                        formdata.append("base64_audio", e);
+                        let xhr = new XMLHttpRequest();
+                        xhr.open('POST', "{{ url_for('speech_recognition') }}", true);
+                        xhr.onload = function () {
+                            if (this.status === 200) {
+                                var data = JSON.parse(this.responseText);
+                                document.getElementById('value').innerHTML = data;
+                            }
+                            else {
+                                console.error(xhr);
+                            }
+                        }
+                        xhr.send(formdata);
+                    });
+                });
+        </script>
+    </body>
+</html>

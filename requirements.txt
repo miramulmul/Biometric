@@ -1,0 +1,12 @@
+cmake
+numpy
+dlib
+imutils
+opencv-contrib-python
+tensorflow
+scikit-learn
+face-recognition
+Flask
+Flask-SQLAlchemy
+SQLAlchemy
+object-detection-0.1==0.1

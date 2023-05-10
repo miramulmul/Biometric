@@ -1,0 +1,256 @@
+<html>
+    <head>
+        <!-- Favicon-->
+        <script src="/static/js/device-uuid.js"></script>
+        <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+        <title>Autorizar | FiscoClic Validación de identidad de personas</title>
+        <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+        <link rel="stylesheet" href="{{ url_for('static',filename='css/face_recognition.css') }}">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="shortcut icon" href="{{ url_for('static',filename='img/favicon.jpg') }}" type="image/x-icon" />
+    </head>
+
+    <body style="background-color: #1A68FD;">
+        <div id="js-log"></div>
+        <div id="input">
+            <img id = "question_pic" style = "width: 48px; height: 48px; margin-top: 1.44vh; display: none;">
+            <div id="camera_input">
+                <p id = 'description'>Sigue las instrucciones para la<br/>
+                    validación biométrica</p>
+                <p id = "question"></p>
+                <p id = "question_description"></p>
+                <div style = "position: relative; margin-top: 0; ">
+                    <video id="myVideo" autoplay playsinline muted>
+                    </video>
+                    <div class = "spinner">
+                        <span id = "spinners" class="spinner-double-section-out" style = "display: none"></span>
+                    </div>
+                </div>
+            </div>
+            <div id = "capture" style = "text-align: center;">
+                <p id = "description1">
+                    Centra tu cara en medio del círculo y da<br/>
+                    clic en el siguiente ícono cuando estes listo
+                </p>
+                <div id="capture_button" class="btn"></div>
+                <p class = "capture_button_des">INICIAR</p>
+            </div>
+        </div>
+
+        <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <img style = "margin-top:4px; width: 169px; height: 143px;"src = "../static/img/crea-grupos.png"/>
+                    <p id = "modal_inc"></p>
+                    <p id = "modal_descrip" class = "modal-description"></p>
+                    <div id = "success_modal_button" class="btn check-icon">
+                        <img style = "margin-top:15px; width: 30.67px; height: 21.08px;"src = "../static/img/Vector.png"/>
+                    </div>
+                    <!-- <button id = "success_modal_button" type="button" class="btn btn-primary modal-button" data-bs-dismiss="modal">Entendido!</button> -->
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="exampleModal1" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="check-icon1">
+                        <img style = "margin-top:31px; width: 53.33px; height: 60px;"src = "../static/img/x.png"/>
+                    </div>
+                    <p id = "modal_descrip1" class = "modal-description1"></p>
+                    <button id = "fail_modal_button" type="button" class="btn btn-primary modal-button" data-bs-dismiss="modal">Siguiente</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="startModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content modal-content-start">
+                    <div class="check-icon-start">
+                        <img style = "margin-left: 10px; margin-top: 37px; width: 67.75px; height: 68.04px;"src = "../static/img/Group.png"/>
+                    </div>
+                    <p id = "modal_descrip-start" class = "modal-description-start"></p>
+                </div>
+            </div>
+        </div> 
+
+        <script>
+            function Log(string) {
+                document.getElementById("js-log").innerHTML +=
+                string;
+            }
+            let v = document.getElementById("myVideo");
+            let b = document.getElementById("capture_button");
+
+            var latitude, longitude;
+            navigator.geolocation.getCurrentPosition(function(location) {
+                latitude = location.coords.latitude;
+                longitude = location.coords.longitude;
+            });
+
+            let question = "Smile";
+            let imageCanvas = document.createElement('canvas');
+            let imageCtx = imageCanvas.getContext("2d");
+
+            function postFile(file) {
+                let formdata = new FormData();
+                formdata.append("question", question);
+                formdata.append("image", file);
+                formdata.append("latitude", latitude + '');
+                formdata.append("longitude", longitude + '');
+
+                let xhr = new XMLHttpRequest();
+                xhr.open('POST', "{{ url_for('recognition') }}", true);
+                xhr.onload = function () {
+                    if (this.status === 200) {
+                        var data = JSON.parse(this.responseText);
+                        if(data['final'] == true){
+                            console.log('------------------')
+                            question = ""
+                            if(data['name'] != 'Unknown'){
+                                let nameee = 'Hola ' + data['name'] + '!';
+                                document.getElementById('modal_inc').innerHTML = nameee;
+                                document.getElementById('modal_descrip').innerHTML = "Gracias por regresar a FiscoClic";
+                                document.getElementById('exampleModal').classList.add("show");
+                                document.getElementById('exampleModal').style.display = "block";
+                                document.getElementById('exampleModal').style.background = "#1A68FD";
+                                setTimeout(() => {
+                                    document.getElementById('exampleModal').classList.remove("show");
+                                    document.getElementById('exampleModal').style.display = "none";
+                                    document.getElementById('modal_descrip-start').innerHTML = "Perfecto! Te estamos redirigiendo...";
+
+                                    document.getElementById('startModal').classList.add("show");
+                                    document.getElementById('startModal').style.display = "block";
+                                    document.getElementById('startModal').style.background = "#5A5977";
+                                    window.location.href = "{{ url_for('clear_pic')}}";
+                                }, 3000)
+                            }
+                            else if(data['not_find_face'] == true)takeawhile("not_find_face")
+                            else takeawhile("fail_face");
+                        }
+                        else if(data['is_cal'] == true){
+                            console.log("-----------is_cal-------------")
+                            if(data['success'] == true)send_for_id();
+                            else takeawhile("fail_spoofy");
+                        }
+                        else{
+                            console.log("--------------")
+                        }
+                    }
+                    else {
+                        console.error(xhr);
+                    }
+                };
+                xhr.send(formdata);
+            }
+
+            function send_for_id(){
+                question = "final_img"
+                document.getElementById('spinners').style.display = "none";
+                document.getElementById('question').innerHTML = "MIRA DE FRENTE";
+                document.getElementById('question_description').innerHTML = "y espera unos segundos en esa posición...";
+                document.getElementById('question_pic').src = "../static/img/neutral.png";
+                let intervalID
+                if(!intervalID)intervalID = setInterval(() => {
+                    sendImagefromCanvas();
+                    document.getElementById('spinners').style.display = "block";
+                    clearInterval(intervalID)
+                    intervalID = null;
+                }, 1000)
+            }
+
+            function takeawhile(message){
+                if(message == "fail_spoofy")document.getElementById('modal_descrip1').innerHTML = "No se puede detectar una persona.<br>Intenta de nuevo";
+                else if(message == "fail_face")document.getElementById('modal_descrip1').innerHTML = "no te conozco";
+                else document.getElementById('modal_descrip1').innerHTML = "No puedo reconocer tu cara<br>Centra tu cara en el<br>medio del círculo e inténtalo de nuevo";
+                document.getElementById('exampleModal1').classList.add("show");
+                document.getElementById('exampleModal1').style.display = "block";
+                document.getElementById('exampleModal1').style.background = "#5A5977";
+                bms = document.getElementById('fail_modal_button');
+                bms.onclick = () => {
+                    window.location.href = "{{ url_for('f_recognition')}}";
+                    bms = document.getElementById('fail_modal_button').style.display = "none";
+                    // document.getElementById('exampleModal1').classList.remove("show");
+                    // document.getElementById('exampleModal1').style.display = "none";
+                }
+            }
+
+            //Get the image from the canvas
+            function sendImagefromCanvas() {
+                //Make sure the canvas is set to the current video size
+                imageCanvas.width = v.videoWidth;
+                imageCanvas.height = v.videoHeight;
+                imageCtx.drawImage(v, 0, 0, v.videoWidth, v.videoHeight);
+                imageCanvas.toBlob(postFile, 'image/jpeg');
+            }
+            const questions = [
+                "Smile",
+            ];
+
+            function send(){
+                let j = 0, intervalID;
+                if(!intervalID)intervalID = setInterval(() => {
+                    j ++;
+                    sendImagefromCanvas()
+                    console.log(j)
+                    if(j == 25){
+                        document.getElementById('spinners').style.display = "block";
+                        clearInterval(intervalID)
+                        intervalID = null;
+                    }
+                }, 80)
+            }
+
+            function sendImage(){
+                const random = Math.floor(Math.random() * questions.length);
+                question = questions[random];
+                let des = "";
+                document.getElementById('spinners').style.display = "none";
+                des = "SONRIE";
+                document.getElementById('question').innerHTML = des;
+                document.getElementById('question').style.display = "block";
+                document.getElementById('question_description').innerHTML = "y espera unos segundos en esa posición";
+                document.getElementById('question_description').style.display = "block";
+                img = document.getElementById('question_pic');
+                img.src = "../static/img/smile.png";
+                img.style.display = "block";
+                let intervalID
+                if(!intervalID)intervalID = setInterval(() => {
+                    send();
+                    clearInterval(intervalID)
+                    intervalID = null;
+                }, 1000)
+            }
+
+            b.onclick = () => {
+                console.log('clicked button');
+                document.getElementById('description').style.display = "none";
+                document.getElementById('capture').style.display = "none";
+                sendImage();
+            }
+
+            let streaming = false;
+            window.onload = function () {
+                video = document.getElementById("myVideo");
+                navigator.mediaDevices
+                    .getUserMedia({ 
+                        video: {
+                            facingMode: 'user'
+                        },
+                        audio: false }
+                    )
+                    .then((stream) => {
+                        video.srcObject = stream;
+                        video.play();
+                    })
+                    .catch((err) => {
+                        console.error(`An error occurred: ${err}`);
+                    });
+            };
+
+        </script>
+    </body>
+</html>

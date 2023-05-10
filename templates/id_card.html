@@ -1,0 +1,272 @@
+<html>
+    <head>
+        <!-- Favicon-->
+        <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+        <title>Onboarding | FiscoClic Validación de identidad de personas</title>
+        <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+        <link rel="shortcut icon" href="{{ url_for('static',filename='img/favicon.jpg') }}" type="image/x-icon" />
+        <link rel="stylesheet" href="{{ url_for('static',filename='css/id_card.css') }}">
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+
+    <body style="background-color: #1A68FD;">
+        <div id="js-log"></div>
+
+        <div id="input">
+            <div id="camera_input">
+                <p id = "header_title">Presenta en el recuadro tu identificación oficial</p>
+                <p id = 'question'></p>
+                <video 
+                    autoplay
+                    playsinline
+                    muted
+                    id = "myVideo" >
+                </video>
+                <p id = "description">Must put the whole ID photo in the area of rectangle<br/>La foto de la identificación debe ser CLARA y reciente<br/>Da clic en el siguiente icono para escanear</p>
+            </div>
+            <div id="capture_button" class="btn"></div>
+            <span id = "spinners" class="spinner-double-section-out" style = "display: none"></span>
+            <a id = "return_office_button" href = "https://www.fiscoclic.mx"></a>
+        </div>
+        <!-- Sucess_Modal -->
+        <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="check-icon">
+                        <img style = "margin-top: 43px; width: 53.33px; height: 36.67px;"src = "../static/img/Vector.png"/>
+                    </div>
+                    <p id = "modal_descrip" class = "modal-description"></p>
+                    <button id = "success_modal_button" type="button" class="btn btn-primary modal-button" data-bs-dismiss="modal">Siguiente</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Fail_modal -->
+        <div class="modal fade" id="exampleModal1" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="check-icon1">
+                        <img style = "margin-top:32px;width: 53px; height: 58px;"src = "../static/img/x.png"/>
+                    </div>
+                    <p id = "descrip" class = "modal-description">Capture su Id_Card correcta</p>
+                    <button id = "fail_modal_button" type="button" class="btn btn-primary modal-button" data-bs-dismiss="modal">Siguiente</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function Log(string) {
+                document.getElementById("js-log").innerHTML +=
+                string;
+            }
+            let i = 0, flg = 0;
+            let vw, vh;
+            let v = document.getElementById("myVideo");
+            if(window.screen.width > 426)vh = 264.566929, vw = vh * 2;
+            else vh = window.screen.height * 30.092 / 100, vw = window.screen.height * 87.2 / 100;
+            console.log(vh);
+            let b = document.getElementById("capture_button");
+            let imageCanvas = document.createElement('canvas');
+            let imageCtx = imageCanvas.getContext("2d");
+            let checkmachine = 0;
+            if(navigator.userAgent.match(/iPhone/i) || navigator.userAgent.match(/iPad/i) || navigator.userAgent.match(/iPod/i))checkmachine = 1;
+            function showmodal(result, num){
+                b.style.display = "block";
+                document.getElementById('spinners').style.display = "none";
+                if(result == 'pass'){
+                    if(!num)document.getElementById('modal_descrip').innerHTML = "Gracias ahora te pediremos<br>escanear de la parte de atrás";
+                    else document.getElementById('modal_descrip').innerHTML = "Listo! Ahora validaremos tu identidad<br>y que seas una persona";
+                    document.getElementById('exampleModal').classList.add("show");
+                    document.getElementById('exampleModal').style.display = "block";
+                    document.getElementById('exampleModal').style.background = "#5A5977";
+                    bms = document.getElementById('success_modal_button');
+                    bms.onclick = () => {
+                        if(!num){
+                            document.getElementById('question').innerHTML = "DE ATRÁS";
+                            b.onclick = () => {
+                                b.style.display = "none";
+                                document.getElementById('spinners').style.display = "block";
+                                sendImagefromCanvas();
+                            };
+                            document.getElementById('exampleModal').classList.remove("show");
+                            document.getElementById('exampleModal').style.display = "none";
+                        }
+                        else{
+                            window.location.href = "{{ url_for('signature')}}"
+                            document.getElementById('success_modal_button').style.display = "none";
+                        }  
+                    }
+                }
+                else{
+                    document.getElementById('exampleModal1').classList.add("show");
+                    document.getElementById('exampleModal1').style.display = "block";
+                    document.getElementById('exampleModal1').style.background = "#5A5977";
+                    bms = document.getElementById('fail_modal_button');
+                    bms.onclick = () => {
+                        document.getElementById('exampleModal1').classList.remove("show");
+                        document.getElementById('exampleModal1').style.display = "none";
+                        // window.location.href = "{{ url_for('id_card')}}";
+                    }
+                }
+            }
+
+            //Add file blob to a form and post
+            function postFile(file) {
+
+                let direc;
+                if(i == 0)direc = "front";
+                if(i == 1)direc = "back";
+                let formdata = new FormData();
+                formdata.append("direction", direc)
+                formdata.append("image", file);
+
+                let ppppk = 0;
+                let xhr = new XMLHttpRequest();
+                xhr.open('POST', "{{ url_for('id_verification') }}", true);
+                xhr.onload = function () {
+                    let intervalID
+                    if(!intervalID)intervalID = setInterval(() => {
+                        clearInterval(intervalID)
+                        if(!ppppk){
+                            document.getElementById('exampleModal1').classList.add("show");
+                            document.getElementById('exampleModal1').style.display = "block";
+                            document.getElementById('exampleModal1').style.background = "#5A5977";
+                            document.getElementById('descrip').innerHTML = "El servidor no está leyendo tus datos.<br> Intenta nuevamente en unos minutos";
+                            bms = document.getElementById('fail_modal_button');
+                            bms.onclick = () => {
+                                document.getElementById('exampleModal1').classList.remove("show");
+                                document.getElementById('exampleModal1').style.display = "none";
+                                document.getElementById('descrip').innerHTML = "Capture su Id_Card correcta";
+                                window.location.href = "{{ url_for('id_card')}}";
+                            }
+                        }
+                    }, 5000)
+                    if (this.status === 200) {
+                        ppppk = 1;
+                        var data = JSON.parse(this.responseText);
+                        console.log(i);                        
+                        console.log(data);
+                        if(direc == 'front' && data['success'] == false){
+                            i = 0;
+                            showmodal("fail", 0);
+                        }
+                        else if(direc == 'front' && data['success'] == true){
+                            if(data['face'] == true){
+                                i = 1;
+                                flg = 1;
+                                showmodal("pass", 0);
+                            }
+                            else{
+                                i = 0;
+                                showmodal('fail', 1);   
+                            }
+                        }
+                        else if(flg == 1 && direc == 'back'){
+                            if(data['face'] == true){
+                                i = 2;
+                                showmodal("pass", 1);
+                            }
+                            else{
+                                i = 1;
+                                showmodal('fail', 1);   
+                            }
+                        }
+                    }
+                    else {
+                        console.error(xhr);
+                    }
+                };
+                xhr.send(formdata);
+            }
+
+            //Get the image from the canvas
+            function sendImagefromCanvas() {
+                imageCanvas.width = v.videoWidth;
+                imageCanvas.height = v.videoHeight;
+
+                imageCtx.drawImage(v, 0, 0);
+
+                //Convert the canvas to blob and post the file
+                imageCanvas.toBlob(postFile, 'image/jpeg');
+                //}
+            }
+
+            document.getElementById('question').innerHTML = "DE FRENTE";
+            b.onclick = () => {
+                flg = 0;
+                b.style.display = "none";
+                document.getElementById('spinners').style.display = "block";
+                sendImagefromCanvas();
+            };
+            
+            if(checkmachine == 1){
+                window.onload = function () {
+                    video = document.getElementById("myVideo");
+                    navigator.mediaDevices
+                        .getUserMedia({ 
+                            video: {
+                                facingMode: 'environment'
+                            },
+                            audio: false 
+                        })
+                        .then((stream) => {
+                            video.srcObject = stream;
+                            video.play();
+                        })
+                        .catch((err) => {
+                            console.error(`An error occurred: ${err}`);
+                        });
+                };
+            }
+            else {
+                console.log("this is not iphone/iPad")
+                navigator.mediaDevices.enumerateDevices()
+                .then(function (devices){
+                    var cameras = devices.filter(function (device){
+                        return device.kind === 'videoinput';
+                    })
+
+                    var deviceId = null;
+                    const videoElm = document.querySelector('#myvideo');    
+                    cameras.forEach(function (camera){
+                        console.log(camera);
+                        if(camera.label.toLowerCase().search('back') > -1){
+                            deviceId = camera.deviceId;
+                        }
+                    })
+
+                    console.log(deviceId)
+
+                    if(!deviceId && cameras.length){
+                        deviceId = cameras[cameras.length - 1].deviceId;
+                    }
+
+                    if(!deviceId){
+                        throw 'no video input'
+                    }
+                    let constraints = {
+                        audio: false,
+                        video: {
+                            deviceId: {
+                                exact: deviceId
+                            },
+                            facingMode: 'environment'
+                        }
+                    }
+                    
+                    navigator.mediaDevices.getUserMedia(constraints)
+                        .then((stream) => {
+                            videoElm.srcObject = stream;
+                            videoElm.play();
+                        })
+                        .catch((err) => {
+                            console.error(`An error occurred: ${err}`);
+                        });
+                })
+            }
+        </script>
+    </body>
+</html>

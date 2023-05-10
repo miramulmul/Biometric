@@ -1,0 +1,36 @@
+<html>
+    <head>
+        <!-- Favicon-->
+        <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+        <title>Onboarding | FiscoClic Validación de identidad de personas</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+        <link rel="stylesheet" href="{{ url_for('static',filename='css/signature.css') }}">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+        <link rel="shortcut icon" href="{{ url_for('static',filename='img/favicon.jpg') }}" type="image/x-icon" />
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+
+    <body style="background-color: #1A68FD;">
+        <input id = "rre_url" style="display: none;" value = {{re_url}}>
+        <div class="modal fade" id="startModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content modal-content-start">
+                    <div class="check-icon-start">
+                        <img style = "margin-left: 10px; margin-top: 37px; width: 67.75px; height: 68.04px;"src = "../static/img/Group.png"/>
+                    </div>
+                    <p id = "modal_descrip-start" class = "modal-description-start"></p>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            let url = document.getElementById('rre_url').value;
+            window.location.href = url;
+            document.getElementById('modal_descrip-start').innerHTML = "Perfecto! Te estamos redirigiendo...";
+            document.getElementById('startModal').classList.add("show");
+            document.getElementById('startModal').style.display = "block";
+            document.getElementById('startModal').style.background = "#5A5977";   
+        </script>
+    </body>
+</html>
